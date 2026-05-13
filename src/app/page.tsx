@@ -90,31 +90,60 @@ export default function Home() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://yourblog.com/post"
+              placeholder="https://yourblog.com/post （需包含正文内容的文章页面）"
               className="w-full px-5 py-4 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
             />
           ) : (
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Paste your blog post or article here..."
+              placeholder="在此粘贴你的博客或文章...（至少 50 字）"
               rows={8}
               className="w-full px-5 py-4 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all resize-y"
             />
           )}
 
-          {inputType === "text" && text.length >= 50 && text.trim().length < 50 && (
-            <p className="mt-2 text-sm text-red-400">Please enter meaningful content, not just spaces.</p>
+          {/* Character count + validation hint */}
+          {inputType === "text" && (
+            <div className="flex items-center justify-between mt-2">
+              <div>
+                {text.trim().length > 0 && text.trim().length < 50 && (
+                  <p className="text-sm text-amber-400">
+                    还需要 <span className="font-semibold">{50 - text.trim().length}</span> 字才能生成
+                  </p>
+                )}
+                {text.length >= 50 && text.trim().length < 50 && (
+                  <p className="text-sm text-red-400">请输入有效内容，不要只填空格。</p>
+                )}
+              </div>
+              <span className={`text-xs tabular-nums transition-colors ${
+                text.trim().length >= 50 ? "text-green-400" : text.trim().length > 0 ? "text-amber-400" : "text-zinc-600"
+              }`}>
+                {text.trim().length}<span className="text-zinc-600"> / 50 最少字数</span>
+              </span>
+            </div>
           )}
 
           <button
             onClick={handleGenerate}
             disabled={loading || (inputType === "url" ? !url : !text?.trim() || text.trim().length < 50)}
-            className="mt-4 w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-zinc-700 disabled:to-zinc-700 disabled:text-zinc-500 text-black font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
+            className="mt-3 w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-zinc-700 disabled:to-zinc-700 disabled:text-zinc-500 text-black font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
           >
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" /> Generating...
+              </>
+            ) : inputType === "url" ? (
+              <>
+                <Sparkles className="w-5 h-5" /> Generate Content
+              </>
+            ) : !text?.trim() ? (
+              <>
+                <Sparkles className="w-5 h-5" /> 输入内容开始生成
+              </>
+            ) : text.trim().length < 50 ? (
+              <>
+                <Sparkles className="w-5 h-5" /> 还需 {50 - text.trim().length} 字
               </>
             ) : (
               <>
