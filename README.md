@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ContentForge
 
-## Getting Started
+**One piece of content. Every platform.** AI-powered content repurposing tool.
 
-First, run the development server:
+Turn a blog post or article into platform-native posts for Twitter/X, LinkedIn, and Newsletter — in seconds.
+
+---
+
+## Quick Start
 
 ```bash
+# 1. Install
+npm install
+
+# 2. Set up API key (DeepSeek recommended for China users)
+# Edit .env.local:
+#   LLM_PROVIDER=deepseek
+#   LLM_API_KEY=sk-your-key-here
+
+# Get DeepSeek key: https://platform.deepseek.com (¥1/million tokens)
+# Or OpenAI: https://platform.openai.com
+# Or ZhipuAI: https://open.bigmodel.cn
+
+# 3. Run
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **URL Fetch** — Paste any article URL, auto-extract clean content
+- **Text Paste** — Paste your own text directly
+- **Three Platforms** — Twitter/X threads, LinkedIn posts, Newsletter drafts
+- **AI-Native** — Each platform version reads like it was written for that platform
+- **Multi-LLM** — Supports DeepSeek, OpenAI, and ZhipuAI (GLM)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech Stack
 
-## Learn More
+- Next.js 16 + TypeScript + Tailwind CSS
+- Cheerio (content extraction)
+- OpenAI-compatible SDK (multi-provider)
 
-To learn more about Next.js, take a look at the following resources:
+## Provider Config
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Provider | Model | Cost | Best For |
+|----------|-------|------|----------|
+| DeepSeek | deepseek-chat | ~¥1/M tokens | China users, cheapest |
+| OpenAI | gpt-4o-mini | ~$0.15/M tokens | Best quality |
+| ZhipuAI | glm-4-flash | ~¥0.1/M tokens | China users, free tier available |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Set via `.env.local`:
+```
+LLM_PROVIDER=deepseek    # deepseek | openai | zhipu
+LLM_API_KEY=sk-xxx
+```
 
-## Deploy on Vercel
+## Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+npm start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
