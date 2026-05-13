@@ -159,9 +159,19 @@ export async function fetchUrlContent(
   });
 
   const content = paragraphs.join("\n\n").slice(0, 6000);
+  const fallbackContent = $("body").text().replace(/\s+/g, " ").trim().slice(0, 4000);
+  const finalContent = content || fallbackContent;
+
+  // Reject trivial pages (search engines, login pages, etc.)
+  if (finalContent.length < 100) {
+    throw new Error(
+      `Could not extract enough content from this URL (only ${finalContent.length} characters). ` +
+      `This page may require login, be a search engine homepage, or have very little text. Try pasting the article text directly.`
+    );
+  }
 
   return {
     title: title.trim(),
-    content: content || $("body").text().replace(/\s+/g, " ").trim().slice(0, 4000),
+    content: finalContent,
   };
 }
