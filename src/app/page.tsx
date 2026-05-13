@@ -103,9 +103,13 @@ export default function Home() {
             />
           )}
 
+          {inputType === "text" && text.length >= 50 && text.trim().length < 50 && (
+            <p className="mt-2 text-sm text-red-400">Please enter meaningful content, not just spaces.</p>
+          )}
+
           <button
             onClick={handleGenerate}
-            disabled={loading || (!url && !text)}
+            disabled={loading || (inputType === "url" ? !url : !text?.trim() || text.trim().length < 50)}
             className="mt-4 w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-zinc-700 disabled:to-zinc-700 disabled:text-zinc-500 text-black font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
           >
             {loading ? (

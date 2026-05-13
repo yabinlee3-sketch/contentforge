@@ -31,12 +31,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing content" }, { status: 400 });
     }
 
-    if (content.length < 50) {
+    const trimmedContent = content.trim();
+    if (trimmedContent.length < 50) {
       return NextResponse.json(
-        { error: "Content too short. Please provide at least 50 characters." },
+        { error: "Content too short. Please provide at least 50 non-whitespace characters." },
         { status: 400 }
       );
     }
+
+    // Use trimmed content for generation
+    content = trimmedContent;
 
     const result = await generateContent(content, title);
     return NextResponse.json(result);
