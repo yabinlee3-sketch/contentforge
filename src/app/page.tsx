@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Loader2, Globe, FileText, Sparkles, ArrowRight, Zap, Share2, Repeat } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Loader2, Globe, FileText, Sparkles, Zap, Share2, Repeat } from "lucide-react";
 import ResultsPanel from "@/components/ResultsPanel";
 
 export default function Home() {
@@ -11,6 +11,23 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
   const [error, setError] = useState("");
+
+  // Compute once — prevent repeated trim() calls in JSX
+  const trimmedLen = text.trim().length;
+  const hasMinChars = trimmedLen >= 50;
+  const needsMore = 50 - trimmedLen;
+
+  // Button label
+  const btnLabel = useMemo(() => {
+    if (loading) return "Generating...";
+    if (inputType === "url") return "Generate Content";
+    if (!text.trim()) return "输入内容开始生成";
+    if (!hasMinChars) return `还需 ${needsMore} 字`;
+    return "Generate Content";
+  }, [loading, inputType, text, hasMinChars, needsMore]);
+
+  // Button disabled?
+  const btnDisabled = loading || (inputType === "url" ? !url : !hasMinChars);
 
   const handleGenerate = useCallback(async () => {
     setError("");
@@ -107,49 +124,31 @@ export default function Home() {
           {inputType === "text" && (
             <div className="flex items-center justify-between mt-2">
               <div>
-                {text.trim().length > 0 && text.trim().length < 50 && (
+                {trimmedLen > 0 && !hasMinChars && (
                   <p className="text-sm text-amber-400">
-                    还需要 <span className="font-semibold">{50 - text.trim().length}</span> 字才能生成
+                    还需要 <span className="font-semibold">{needsMore}</span> 字才能生成
                   </p>
-                )}
-                {text.length >= 50 && text.trim().length < 50 && (
-                  <p className="text-sm text-red-400">请输入有效内容，不要只填空格。</p>
                 )}
               </div>
               <span className={`text-xs tabular-nums transition-colors ${
-                text.trim().length >= 50 ? "text-green-400" : text.trim().length > 0 ? "text-amber-400" : "text-zinc-600"
+                hasMinChars ? "text-green-400" : trimmedLen > 0 ? "text-amber-400" : "text-zinc-600"
               }`}>
-                {text.trim().length}<span className="text-zinc-600"> / 50 最少字数</span>
+                {trimmedLen}<span className="text-zinc-600"> / 50 最少字数</span>
               </span>
             </div>
           )}
 
           <button
             onClick={handleGenerate}
-            disabled={loading || (inputType === "url" ? !url : !text?.trim() || text.trim().length < 50)}
+            disabled={btnDisabled}
             className="mt-3 w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-zinc-700 disabled:to-zinc-700 disabled:text-zinc-500 text-black font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" /> Generating...
-              </>
-            ) : inputType === "url" ? (
-              <>
-                <Sparkles className="w-5 h-5" /> Generate Content
-              </>
-            ) : !text?.trim() ? (
-              <>
-                <Sparkles className="w-5 h-5" /> 输入内容开始生成
-              </>
-            ) : text.trim().length < 50 ? (
-              <>
-                <Sparkles className="w-5 h-5" /> 还需 {50 - text.trim().length} 字
-              </>
+              <Loader2 className="w-5 h-5 animate-spin mr-1" />
             ) : (
-              <>
-                <Sparkles className="w-5 h-5" /> Generate Content
-              </>
+              <Sparkles className="w-5 h-5 mr-1" />
             )}
+            {btnLabel}
           </button>
 
           {error && (
