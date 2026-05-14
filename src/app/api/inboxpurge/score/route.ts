@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
         messages,
         temperature: temperature ?? 0.3,
         max_tokens: max_tokens ?? 200,
