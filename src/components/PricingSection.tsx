@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { Sparkles, Check, Zap, Lock } from "lucide-react";
-import { openCheckout, remainingFree, isPro, setPro, FREE_LIMIT } from "@/lib/paywall";
+import { openCheckout, remainingFree, isPro, getExpiryDate, initCheckoutListener, checkRecentPurchase, activatePro, FREE_LIMIT } from "@/lib/paywall";
 
 export default function PricingSection() {
+  useEffect(() => {
+    initCheckoutListener();
+    checkRecentPurchase();
+  }, []);
+
   const remaining = remainingFree();
   const pro = isPro();
+  const expiry = getExpiryDate();
 
   return (
     <div className="max-w-4xl mx-auto px-4 pb-24 pt-16">
@@ -35,7 +42,7 @@ export default function PricingSection() {
           </ul>
           {pro ? (
             <div className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-center font-medium text-sm">
-              ✓ Pro Active
+              ? Pro Active {expiry ? `(expires ${expiry})` : ''}
             </div>
           ) : (
             <div className="w-full py-3 bg-zinc-800 text-zinc-400 rounded-xl text-center text-sm font-medium">
@@ -60,7 +67,7 @@ export default function PricingSection() {
               "Unlimited generations",
               "Priority AI processing",
               "Advanced prompt (better quality)",
-              "Support indie development 🚀",
+              "Support indie development ??",
             ].map((f, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
                 <Zap className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
@@ -74,7 +81,7 @@ export default function PricingSection() {
             className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-zinc-700 disabled:to-zinc-700 text-black disabled:text-zinc-500 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
           >
             {pro ? (
-              <>✓ Active</>
+              <>? Active</>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" /> Upgrade Now
@@ -90,11 +97,12 @@ export default function PricingSection() {
           <h4 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
             <Lock className="w-3.5 h-3.5" /> Already purchased?
           </h4>
+          <p className="text-xs text-zinc-500 mb-3">After checkout, refresh this page and click Activate below.</p>
           <div className="flex gap-2">
             <input
               id="license-input"
               type="text"
-              placeholder="Paste license key..."
+              placeholder="Just click Activate after payment..."
               className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
             />
             <button
@@ -102,8 +110,9 @@ export default function PricingSection() {
               onClick={() => {
                 const input = document.getElementById("license-input") as HTMLInputElement;
                 const key = input?.value?.trim();
-                if (key && key.length > 10) {
-                  setPro();
+                // Simple activation - any input works for MVP
+                if (key && key.length > 5) {
+                  activatePro();
                   window.location.reload();
                 }
               }}
@@ -117,4 +126,3 @@ export default function PricingSection() {
     </div>
   );
 }
-
