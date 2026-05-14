@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Loader2, Globe, FileText, Sparkles, Zap, Share2, Repeat } from "lucide-react";
+import { Loader2, Globe, FileText, Sparkles, Zap, Share2, Repeat, Lock } from "lucide-react";
 import ResultsPanel from "@/components/ResultsPanel";
+import PricingSection from "@/components/PricingSection";
+import { canGenerate, incrementUsage, remainingFree, isPro } from "@/lib/paywall";
 
 // DeepSeek client-side call — bypasses Vercel's 10s+ timeout
 const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
@@ -40,6 +42,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
   const [error, setError] = useState("");
+  const [showPricing, setShowPricing] = useState(false);
 
   // Compute once — prevent repeated trim() calls in JSX
   const trimmedLen = text.trim().length;
@@ -59,6 +62,12 @@ export default function Home() {
   const btnDisabled = loading || (inputType === "url" ? !url : !hasMinChars);
 
   const handleGenerate = useCallback(async () => {
+    // Check paywall
+    if (!canGenerate()) {
+      setShowPricing(true);
+      return;
+    }
+
     setError("");
     setResults(null);
     setLoading(true);
@@ -86,6 +95,7 @@ export default function Home() {
 
       const result = await callDeepSeek(sourceText, sourceTitle);
       setResults(result.platforms || []);
+      incrementUsage(); // Track free tier usage
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -189,6 +199,12 @@ export default function Home() {
             {btnLabel}
           </button>
 
+          {!isPro() && (
+            <p className="mt-2 text-xs text-zinc-500">
+              Free: {remainingFree()} / 5 generations
+            </p>
+          )}
+
           {error && (
             <p className="mt-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">
               {error}
@@ -200,8 +216,11 @@ export default function Home() {
       {/* Results */}
       {results && <ResultsPanel results={results} />}
 
-      {/* Features */}
-      {!results && (
+      {/* Pricing */}
+      {showPricing && <PricingSection />}
+
+      {/* Features (only when no results and no pricing) */}
+      {!results && !showPricing && (
         <div className="max-w-4xl mx-auto px-4 pb-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
             {[
