@@ -1,7 +1,7 @@
 /* Usage tracking + Paywall */
 const STORAGE_KEY = "cf_usage";
 const PRO_KEY = "cf_pro";
-const FREE_LIMIT = 5;
+export const FREE_LIMIT = 5;
 
 export interface UsageData {
   count: number;
