@@ -4,6 +4,35 @@ import { useState, useCallback, useMemo } from "react";
 import { Loader2, Globe, FileText, Sparkles, Zap, Share2, Repeat } from "lucide-react";
 import ResultsPanel from "@/components/ResultsPanel";
 
+// DeepSeek client-side call — bypasses Vercel's 10s+ timeout
+const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
+const DEEPSEEK_KEY = "sk-d67a1b0a57734dcc81c98cec839aea47";
+const SYSTEM_PROMPT = `You are ContentForge. Take an article and write 3 platform versions: Twitter/X thread, LinkedIn post, newsletter.
+
+Output JSON: {"platforms":[{"platform":"twitter|linkedin|newsletter","content":"...","tips":"tip"}]}`;
+
+async function callDeepSeek(text: string, title: string) {
+  const res = await fetch(DEEPSEEK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEEPSEEK_KEY}` },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Title: ${title}\n\nContent:\n${text.slice(0, 4000)}` },
+      ],
+      temperature: 0.7,
+      max_tokens: 1024,
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error?.message || `API error ${res.status}`);
+  let raw = json.choices?.[0]?.message?.content || "{}";
+  raw = raw.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
+  return JSON.parse(raw);
+}
+
 export default function Home() {
   const [inputType, setInputType] = useState<"url" | "text">("text");
   const [url, setUrl] = useState("");
@@ -35,20 +64,28 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: inputType,
-          url: inputType === "url" ? url : undefined,
-          text: inputType === "text" ? text : undefined,
-        }),
-        signal: AbortSignal.timeout(35000),
-      });
+      let sourceText: string;
+      let sourceTitle: string;
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
-      setResults(data.platforms);
+      if (inputType === "url") {
+        // Use backend to fetch URL content (fast, no DeepSeek call on server)
+        const fetchRes = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "url", url }),
+          signal: AbortSignal.timeout(15000),
+        });
+        const fetchData = await fetchRes.json();
+        if (!fetchRes.ok) throw new Error(fetchData.error || "Failed to fetch URL");
+        sourceText = fetchData.content;
+        sourceTitle = fetchData.title || "Untitled";
+      } else {
+        sourceText = text;
+        sourceTitle = text.slice(0, 60) + (text.length > 60 ? "..." : "");
+      }
+
+      const result = await callDeepSeek(sourceText, sourceTitle);
+      setResults(result.platforms || []);
     } catch (e: any) {
       setError(e.message);
     } finally {
