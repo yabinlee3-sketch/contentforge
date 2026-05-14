@@ -94,8 +94,8 @@ export async function generateContent(
     ],
     response_format: { type: "json_object" },
     temperature: 0.7,
-    max_tokens: 1024,
-  }, { timeout: 8000 });
+    max_tokens: 512,
+  }, { timeout: 10000 });
 
   const result = JSON.parse(response.choices[0].message.content || "{}");
 
