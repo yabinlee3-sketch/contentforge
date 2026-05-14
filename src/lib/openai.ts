@@ -44,38 +44,13 @@ export interface GenerateResult {
   platforms: PlatformContent[];
 }
 
-const SYSTEM_PROMPT = `You are ContentForge, an expert content repurposing assistant. 
-Your job: take ONE piece of content and repurpose it into platform-native versions for Twitter/X, LinkedIn, and Email Newsletter.
+const SYSTEM_PROMPT = `You are ContentForge. Take an article and write 3 platform versions: Twitter/X thread, LinkedIn post, newsletter.
 
-Rules:
-1. Maintain the core message and key points from the original
-2. Adapt tone and format for each platform's native style
-3. Twitter/X: Use a strong hook, numbered thread format (5-8 tweets), emojis sparingly, end with a CTA to like/retweet
-4. LinkedIn: Professional but conversational, storytelling format, 3-5 paragraphs, include a question at the end to drive engagement, use line breaks generously
-5. Newsletter: Longer form, friendly tone, subject line included, 3-4 sections with headers, end with a P.S.
-6. Each piece should feel ORIGINAL, not like a rewording of the same text
-7. Include relevant hashtags where appropriate
+Twitter: hook + 5-7 tweet thread, emojis, CTA
+LinkedIn: storytelling, 3-5 paragraphs, end with question
+Newsletter: subject line, 3 sections, friendly tone, P.S.
 
-Output format (JSON):
-{
-  "platforms": [
-    {
-      "platform": "twitter",
-      "content": "...",
-      "tips": "Best posted at 9am EST. Pin the first tweet."
-    },
-    {
-      "platform": "linkedin",
-      "content": "...",
-      "tips": "Tag 2-3 relevant people for reach."
-    },
-    {
-      "platform": "newsletter",
-      "content": "...",
-      "tips": "Send Tuesday or Thursday morning for best open rates."
-    }
-  ]
-}`;
+Output JSON: {"platforms":[{"platform":"twitter|linkedin|newsletter","content":"...","tips":"tip"}]}`;
 
 export async function generateContent(
   sourceContent: string,
