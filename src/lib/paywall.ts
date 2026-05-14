@@ -1,4 +1,4 @@
-/* Usage tracking + Paywall */
+﻿/* Usage tracking + Paywall */
 const STORAGE_KEY = "cf_usage";
 const PRO_KEY = "cf_pro";
 export const FREE_LIMIT = 5;
@@ -44,10 +44,10 @@ export function canGenerate(): boolean {
   return isPro() || getUsage().count < FREE_LIMIT;
 }
 
-// LemonSqueezy checkout URL — store needs activation first
+// LemonSqueezy checkout URL 鈥?store needs activation first
 // After activation at https://app.lemonsqueezy.com/settings/general/identity
 // the checkout URL will be: https://contentforgeapp.lemonsqueezy.com/checkout
-export const LEMON_CHECKOUT_URL = "https://contentforgeapp.lemonsqueezy.com/checkout";
+export const LEMON_CHECKOUT_URL = "https://contentforgeapp.lemonsqueezy.com/checkout/buy/fa7219f8-7fc4-4967-8d57-594de1e6aa59";
 
 export function openCheckout() {
   window.open(LEMON_CHECKOUT_URL, "_blank", "width=600,height=700");
