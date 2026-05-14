@@ -43,7 +43,7 @@ export default function Home() {
           url: inputType === "url" ? url : undefined,
           text: inputType === "text" ? text : undefined,
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(35000),
       });
 
       const data = await res.json();
