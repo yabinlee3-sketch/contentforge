@@ -28,7 +28,7 @@ function getClient() {
       apiKey: process.env.LLM_API_KEY,
       baseURL: config.baseURL,
     }),
-    model: process.env.LLM_MODEL || config.model,
+    model: process.env.DEEPSEEK_MODEL || process.env.LLM_MODEL || config.model,
   };
 }
 
