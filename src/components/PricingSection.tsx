@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, Check, Zap, Lock } from "lucide-react";
-import { openCheckout, remainingFree, isPro } from "@/lib/paywall";
+import { openCheckout, remainingFree, isPro, setPro, FREE_LIMIT } from "@/lib/paywall";
 
 export default function PricingSection() {
   const remaining = remainingFree();
@@ -103,7 +103,6 @@ export default function PricingSection() {
                 const input = document.getElementById("license-input") as HTMLInputElement;
                 const key = input?.value?.trim();
                 if (key && key.length > 10) {
-                  const { setPro } = require("@/lib/paywall");
                   setPro();
                   window.location.reload();
                 }
@@ -119,4 +118,3 @@ export default function PricingSection() {
   );
 }
 
-const FREE_LIMIT = 5; // Export for use
