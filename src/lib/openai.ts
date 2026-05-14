@@ -92,12 +92,14 @@ export async function generateContent(
         content: `Title: ${sourceTitle}\n\nContent:\n${sourceContent.slice(0, 4000)}`,
       },
     ],
-    response_format: { type: "json_object" },
     temperature: 0.7,
-    max_tokens: 512,
+    max_tokens: 384,
   }, { timeout: 10000 });
 
-  const result = JSON.parse(response.choices[0].message.content || "{}");
+  let raw = response.choices[0].message.content || "{}";
+  // Strip markdown code fences if present
+  raw = raw.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
+  const result = JSON.parse(raw);
 
   return {
     originalTitle: sourceTitle,
