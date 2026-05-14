@@ -44,8 +44,10 @@ export function canGenerate(): boolean {
   return isPro() || getUsage().count < FREE_LIMIT;
 }
 
-// LemonSqueezy checkout URL - replace with your actual product link
-export const LEMON_CHECKOUT_URL = "https://yabinlee.lemonsqueezy.com/checkout/buy/xxxx";
+// LemonSqueezy checkout URL — store needs activation first
+// After activation at https://app.lemonsqueezy.com/settings/general/identity
+// the checkout URL will be: https://contentforgeapp.lemonsqueezy.com/checkout
+export const LEMON_CHECKOUT_URL = "https://contentforgeapp.lemonsqueezy.com/checkout";
 
 export function openCheckout() {
   window.open(LEMON_CHECKOUT_URL, "_blank", "width=600,height=700");
