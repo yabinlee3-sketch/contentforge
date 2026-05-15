@@ -1,0 +1,406 @@
+<!DOCTYPE html><html><head><meta charset=utf-8><title>ContentForge 项目交接</title><style>body{max-width:800px;margin:0 auto;padding:20px;font:15px/1.7 sans-serif;color:#333}pre{white-space:pre-wrap;border:none;background:transparent;font:15px/1.7 sans-serif;color:#333;padding:0}</style></head><body><pre># ContentForge + InboxPurge AI 完整项目交接
+
+&gt; 生成：2026-05-15 08:10 | 用途：交接给新 AI 智能体
+&gt; 包含：两个 AI 产品 + 自动化基础设施 + 商业规划
+&gt; 说明：本文件是**唯一准确的状态快照**，新 AI 必须先读此文件再做任何操作
+
+---
+
+## 📋 目录
+1. 总体情况
+2. 项目一：ContentForge（AI 内容生成器，已上线）
+3. 项目二：InboxPurge AI（Gmail 清理 Chrome 扩展，待发布）
+4. 自动化基础设施（公众号流水线 + 网络看门狗 + cron）
+5. AI Engineer 分身
+6. 商业规划（自媒体矩阵 + YouTube + 量化）
+7. 完整操作手册（代码修改、部署、日常检查）
+8. 账号凭据一览
+9. 待办清单（分优先级）
+
+---
+
+## 1. 总体情况
+
+### 人物
+- **主人：** yabinlee（以下称 boss），全栈工程师，人在中国，时区 GMT+8
+- **前任 AI：** 奶茶（留下了交接文档和所有代码）
+- **开发设备：** Windows 10 台式机，已安装 Node.js、Python 3.13、Chrome
+
+### 核心信息
+- **当前时间：** 2026-05-15 08:00（boss 通宵了，让他先睡）
+- **通讯方式：** 飞书 DM（boss 通过手机或电脑发消息）
+- **项目目录：** workspace 在 `C:\Users\yabin\.openclaw-autoclaw\workspace\`
+- **网络代理：** Astar 127.0.0.1:58309（访问国际网站必用）
+- **AI 模型：** DeepSeek（API 极便宜，是竞品 OpenAI 的 1/10 价格）
+
+---
+
+## 2. 项目一：ContentForge
+
+### 2.1 是什么
+AI 内容生成器 SaaS。用户输入一个 URL 或一段文字，AI 自动生成 Twitter 帖子、LinkedIn 文章、Newsletter 三种格式。
+
+### 2.2 核心信息
+- **网址：** https://contentforge-three-chi.vercel.app
+- **技术栈：** Next.js + Tailwind CSS + DeepSeek API + LemonSqueezy
+- **定价：** 免费层（5次/用户，localStorage 计数）+ Pro ¥65/月（$9/mo）
+- **支付：** LemonSqueezy，PayPal 收款，yabinlee3@gmail.com
+- **代码仓库：** GitHub yabinlee3-sketch/contentforge（main 分支）
+- **部署：** GitHub push → Vercel 自动部署
+
+### 2.3 前端代码位置与结构
+```
+（实际开发目录）
+C:\Users\yabin\.openclaw-autoclaw\agents\ai\workspace\contentforge\src\
+├── app/
+│   ├── page.tsx              ← 首页（Hero + Features + Pricing + FAQ）
+│   ├── layout.tsx            ← 布局（导航栏 + Footer + Plausible 统计）
+│   ├── terms/page.tsx        ← 服务条款
+│   ├── privacy/page.tsx      ← 隐私政策
+│   ├── contact/page.tsx      ← 联系页面
+│   └── api/
+│       └── generate/route.ts ← DeepSeek API 代理路由
+├── lib/
+│   ├── paywall.ts            ← Pro 付费验证逻辑（关键文件，详见 2.5）
+│   └── supabase.ts           ← Supabase 客户端（暂未启用，见 2.7）
+└── components/
+    ├── HeroSection.tsx       ← 主页 Hero
+    ├── FeaturesSection.tsx   ← 功能列表
+    ├── PricingSection.tsx    ← 定价卡片 + Pro 状态
+    └── FAQSection.tsx        ← 常见问题
+```
+
+### 2.4 页面清单
+| 页面 | URL | 说明 |
+|-----|-----|------|
+| 首页 | / | Hero + Features + Pricing + FAQ |
+| 服务条款 | /terms | 标准 ToS 内容 |
+| 隐私政策 | /privacy | 标准隐私说明 |
+| 联系我们 | /contact | 简单联系表单 |
+| 生成 API | /api/generate | DeepSeek 代理（POST） |
+
+页面设计的风格：暗色（zinc/amber 配色），Tailwind 构建，无额外 UI 库。
+
+### 2.5 paywall.ts 验证逻辑（重要，新 AI 必须理解）
+当前是客户端验证（localStorage），不是服务端验证。
+
+**代码逻辑：**
+1. 用户打开页面 → `isPro()` 检查 localStorage 中的 `cf_pro_expiry`
+2. 如果有值且未过期 → 返回 `true`（Pro 激活）
+3. 如果没有或已过期 → 返回 `false`（免费用户）
+4. 免费用户显示剩余次数（`remainingFree()`，也是 localStorage 计数）
+5. 用户点击"Upgrade Now" → `openCheckout()` 打开 LemonSqueezy 结账弹窗
+6. 用户付完款 → 弹窗关闭 → 触发了 `postMessage` 事件监听
+7. `initCheckoutListener()` 捕获到 checkout 完成 → 设置 30 天有效期
+8. 页面刷新后保持 Pro 状态
+
+**`activatePro()` 函数：** 设置 30 天后的过期时间戳到 localStorage
+**`checkRecentPurchase()` 函数：** 页面加载时检查是否有新支付（备用方案）
+**`clearProStatus()` 函数：** 清除 Pro 状态（降级用）
+
+**这个验证方式的风险：** 用户可以通过 Chrome DevTools 修改 localStorage 绕过。
+解决方案（等 boss 注册 Supabase 后启用）：把验证改为 API 调用 + 数据库存储。
+
+### 2.6 LemonSqueezy 配置详情
+- 商店 URL：https://contentforgeapp.lemonsqueezy.com
+- 产品：ContentForge Pro
+- 定价：¥65/月（人民币定价）
+- 变体 ID（硬编码在 paywall.ts）：`fa7219f8-7fc4-4967-8d57-594de1e6aa59`
+- 结账 URL：https://contentforgeapp.lemonsqueezy.com/checkout/buy/fa7219f8-7fc4-4967-8d57-594de1e6aa59
+- 收款：PayPal（yabinlee3@gmail.com），PayPal 已绑定中国银行卡
+- 特别说明：LemonSqueezy 不支持中国银行直接收款，必须通过 PayPal 中转
+
+### 2.7 服务端验证（计划中）
+需要 boss 注册 supabase.com 后启用：
+1. 在 Supabase 创建 `subscriptions` 表
+2. 搭建 LemonSqueezy webhook 接收端
+3. 用户付款后 webhook 写入数据库
+4. 页面加载时通过 API 查询验证
+5. 更安全可靠
+
+代码骨架已在 `src/lib/supabase.ts` 和 `src/app/api/webhook/route.ts` 中，**待激活**。
+
+---
+
+## 3. 项目二：InboxPurge AI
+
+### 3.1 是什么
+Chrome 扩展，用 AI 自动扫描 Gmail 中的订阅邮件，帮助用户一键退订。
+
+### 3.2 状态
+- 开发：✅ 已基本完成
+- 测试：✅ Gmail 扫描功能已验证可用
+- 发布：❌ 未发布到 Chrome Web Store（需要 $5 注册费）
+- 后续：❌ 暂未上线
+- 代码位置：AI Engineer 的 workspace 中
+
+### 3.3 核心功能
+1. 连接 Gmail（Google OAuth）
+2. 扫描最近 30 天的订阅邮件
+3. 用 AI（DeepSeek）分析每封邮件的价值
+4. 展示评分结果（高/中/低价值）
+5. 一键退订低价值邮件
+
+### 3.4 为什么做这个
+- 作为 ContentForge 的生态补充产品
+- 免费使用，为 ContentForge 导流
+- 验证 Chrome 扩展开发 → 未来扩展成矩阵
+
+### 3.5 发布计划
+需要 boss：
+1. 支付 $5 Chrome Web Store 注册费
+2. 帮忙提交到 Chrome Web Store
+3. 发布后和其他扩展交叉推广
+
+---
+
+## 4. 自动化基础设施
+
+### 4.1 公众号流水线（"小沙丘的故事"）
+**每天 9:00 自动运行的内容生产流水线：**
+
+流程：
+```
+IT之家 RSS（60条）──┐
+                    ├─→ AI 筛选 5-6 条 → AI 写稿
+Hacker News API（18条）─┘          ↓
+                             生成本文
+                                  ↓
+                         Pillow 生成封面图（900×500）
+                                  ↓
+                         为每个章节配图（Pexels API）
+                                  ↓
+                         Pexels 不可用 → Pillow 几何色块
+                                  ↓
+                         AI 生成"今日观点"（120字评论）
+                                  ↓
+                         上传微信草稿箱（draft/add API）
+                                  ↓
+                         cron 完成，自动提醒 boss 手动发布
+```
+
+**代码文件：**
+```
+C:\Users\yabin\.openclaw-autoclaw\workspace\projects\content-pipeline\
+├── tech_news_fetcher.py    ← 新闻抓取（IT之家 RSS + Hacker News Firebase）
+├── wechat_publisher.py     ← 全流程：token→封面→配图→草稿箱
+├── plan.md                 ← 内容计划
+└── marketing/
+    ├── product_hunt_draft.md   ← Product Hunt 发布稿
+    └── twitter_content.md      ← Twitter 4 周内容计划
+```
+
+**cron 配置：**
+- job ID：c3068aba-1a71-45ec-b514-c5746df8b429
+- 触发时间：每日 9:00 CST
+- 类型：isolated agentTurn
+- delivery：announce（推送到飞书）
+
+**公众号账号信息：**
+- 名称：小沙丘的故事
+- 类型：个人订阅号（非认证）
+- 粉丝：715
+- 日收入：¥210（流量主广告分成）
+- AppID：wxabaf259b21106b84
+- AppSecret：[WECHAT_APPSECRET]
+- 注意：不能自动发推文，只能写入草稿箱，boss 要手动点发布
+
+### 4.2 网络看门狗
+**功能：** 自动检测并修复断网问题
+
+**脚本位置：** `C:\Users\yabin\.openclaw-autoclaw\workspace\scripts\network_watchdog.ps1`
+
+**工作方式：**
+1. 每 30 秒 ping 8.8.8.8 检查网络
+2. 如果断网 → 3 级自动恢复：
+   - 第 1 级：重启 Astar 代理服务（最快）
+   - 第 2 级：重启 Wi-Fi 网卡（如果第 1 级没解决）
+   - 第 3 级：重启 OpenClaw gateway（最后手段）
+3. 启动方式：Windows 计划任务 `OpenClaw_NetworkWatchdog`（开机 + 登录触发）
+
+**日志：** `C:\Users\yabin\.openclaw-autoclaw\logs\network_watchdog.log`
+
+### 4.3 其他 cron 任务
+除了公众号 9:00 的 cron，未来可能增加的任务：
+- ✅ ContentForge 推广推文生成
+- ✅ 每日商业机会提醒（可选）
+
+---
+
+## 5. AI Engineer 分身
+
+### 5.1 是什么
+OpenClaw 的一个独立 AI 分身（agent ID: `ai`），专门负责代码开发任务。
+
+### 5.2 与"奶茶"的关系
+- **奶茶（我）：** 处理对话、自动化、内容生成、写文档、决策建议
+- **AI Engineer：** 处理纯代码开发（写代码、改代码、测试）
+
+### 5.3 配置
+- 子会话，有自己的 workspace：`C:\Users\yabin\.openclaw-autoclaw\agents\ai\workspace\`
+- 技能：fullstack、llm-engineering、backend、devops、agent-engineering
+
+### 5.4 已完成的工作
+- 开发了 ContentForge 前端代码（Next.js 页面、组件、API 路由）
+- 开发了 InboxPurge AI Chrome 扩展
+- 做过 4 个商业分析（marketing、monetization/tax、bug/support、unknown unknowns）
+- 分析内容已存在但尚未执行
+
+### 5.5 如何调用
+通过 `sessions_spawn` 工具，指定 runtime=subagent，agentId=ai。
+
+---
+
+## 6. 商业规划摘要
+
+### 6.1 三个执行阶段
+
+**第一阶段（立即，0 成本）：**
+自媒体矩阵放大 —— 公众号文章同步到知乎/头条/百家号/小红书
+
+**第二阶段（本周启动）：**
+- Twitter 日更 Build in Public
+- ContentForge SEO 优化
+- Product Hunt 发布
+
+**第三阶段（有闲钱后）：**
+- 加密货币量化交易（网格策略，$500 起步）
+- YouTube 自动化频道（AI 配音，每周 3 条）
+
+### 6.2 完整报告
+详见 `projects/business-opportunities/` 目录，包含：
+- 10 大方向对比（投入、回报、风险）
+- 优先级排序
+- 法律红线清单
+- "三线并行"策略
+
+---
+
+## 7. 操作手册（新 AI 必看）
+
+### 7.1 如何修改代码并部署
+```
+Step 1: 用 exec 工具读取文件
+Step 2: 用 write/edit 工具修改
+Step 3: 用 Node.js 脚本 push 到 GitHub
+```
+
+GitHub push 的 Node.js 示例（必须用这个方式，不能用本地 git）：
+```javascript
+// 1. 读取文件内容
+const fs = require('fs');
+const content = fs.readFileSync('文件路径', 'utf8');
+const b64 = Buffer.from(content, 'utf8').toString('base64');
+
+// 2. 获取现有文件的 SHA（GitHub API）
+// GET /repos/yabinlee3-sketch/contentforge/contents/文件路径?ref=main
+
+// 3. PUT 新内容
+// PUT /repos/yabinlee3-sketch/contentforge/contents/文件路径
+// Body: { message: "提交信息", content: b64, sha: "获取到的sha", branch: "main" }
+
+// Token: [GITHUB_TOKEN]
+// 注意：Token 在对话里出现了，不要再在对话里重复
+```
+
+### 7.2 如何检查网站状态
+```javascript
+web_fetch("https://contentforge-three-chi.vercel.app")
+// 正常返回：HTML 内容
+// 异常：500 错误
+```
+
+### 7.3 如何检查 cron
+```javascript
+cron action=list
+// 查看 c3068aba 的状态
+cron action=runs jobId=c3068aba
+// 查看历史运行记录
+cron action=run jobId=c3068aba
+// 手动触发一次
+```
+
+### 7.4 如何发推文（需要 boss 配合）
+```
+1. 我写推文文案
+2. boss 复制粘贴到 Twitter 发布
+3. 告诉我发了，我来观察互动数据
+4. 根据数据调整下一条内容
+```
+
+### 7.5 如何汇报
+- 每天固定汇报一次（除非有紧急情况）
+- 格式：关键数据 + 做了什么 + 需要 boss 做什么
+- 每件事控制在 3 行以内
+
+---
+
+## 8. 账号凭据总表
+
+| 服务 | 账号/ID | 凭据 | 备注 |
+|------|---------|------|------|
+| GitHub | yabinlee3-sketch | Token: [GITHUB_TOKEN] | 已硬编码 |
+| 微信 | wxabaf259b21106b84 | AppSecret: [WECHAT_APPSECRET] | 环境变量 |
+| Pexels | [PEXELS_KEY] | API Key | 环境变量 |
+| DeepSeek | - | API Key | Vercel 环境变量 |
+| LemonSqueezy | contentforgeapp | - | 已激活 |
+| PayPal | yabinlee3@gmail.com | - | 已关联银行 |
+| Twitter | yabinlee3@gmail.com | 密码 boss 知道 | 显示名 ContentForgeHQ |
+| Astar 代理 | 127.0.0.1:58309 | - | 系统级 |
+| Supabase | 未注册 | - | 待 boss 注册 |
+
+**安全提醒：这些凭据不要在其他地方泄露。**
+
+---
+
+## 9. 待办清单
+
+### P0 - 立即处理（影响收入）
+- [ ] boss 测试支付流程（自己买一次）
+- [ ] Twitter 日更启动（每天 1-2 条）
+- [ ] 检查今天 9:00 的 cron 是否正常
+
+### P1 - 尽快处理
+- [ ] boss 注册 supabase.com → 加服务端验证
+- [ ] Product Hunt 发布
+- [ ] 公众号文章同步到知乎/头条
+
+### P2 - 有空做
+- [ ] 给 ContentForgeHQ 做 Logo
+- [ ] InboxPurge AI 发布到 Chrome Web Store
+- [ ] YouTube 频道启动
+- [ ] 量化交易策略开发
+
+### 不需要做的事（避免浪费时间）
+- ❌ 认证公众号（没必要，个人号够用）
+- ❌ 买自定义域名（等有收入再说）
+- ❌ 搭建复杂后端（MVP 够用）
+- ❌ 改定价（¥65/月 已定）
+
+---
+
+## 附：我能做 vs 我不能做的事
+
+**我能（可以自己决定）：**
+- ✅ 读/写 workspace 内的文件
+- ✅ 修改代码并 push 到 GitHub
+- ✅ 写文案（推文、营销、文档）
+- ✅ 做研究和分析
+- ✅ 检查系统和 cron 状态
+- ✅ 执行 Python/PowerShell/Node.js 脚本
+
+**我不能（需要 boss 参与）：**
+- ❌ 操作浏览器（被代理阻塞）
+- ❌ 注册需要手机验证的账号
+- ❌ 发推（只能写文案让 boss 发）
+- ❌ 发微信文章（只能写到草稿箱）
+- ❌ 花钱
+- ❌ 访问 workspace 外的文件（需要先 exec copy）
+- ❌ 直接发消息到 boss 的社交媒体
+- ❌ 登录 boss 的 Google/Twitter/微信账号
+
+---
+
+&gt; **最后的最后：** boss 从 5 月 14 日下午 4 点干到了 5 月 15 日早上 8 点，16 个小时没停过。
+&gt; 让他先睡觉。别的等他醒了再说。
+</pre></body></html>
