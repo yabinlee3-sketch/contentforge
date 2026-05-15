@@ -1,12 +1,20 @@
 // POST /api/check-pro
 // Validates an HMAC-signed pro token returned by /api/claim-pro
-// Returns { active, expiresAt } — used by frontend to verify Pro status server-side
+// Returns { active, expiresAt }
 
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 
 function getSigningKey(): string {
   return process.env.LEMON_SQUEEZY_SECRET || process.env.LLM_API_KEY || "";
+}
+
+function base64UrlDecode(s: string): string {
+  // Convert base64url to standard base64
+  let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  // Add padding
+  while (b64.length % 4) b64 += "=";
+  return Buffer.from(b64, "base64").toString("utf8");
 }
 
 export async function POST(request: NextRequest) {
@@ -28,10 +36,17 @@ export async function POST(request: NextRequest) {
     const payloadB64 = token.slice(0, dotIdx);
     const signature = token.slice(dotIdx + 1);
 
-    // Verify signature
+    // Verify signature if signing key is configured
     if (key) {
+      let payloadStr: string;
+      try {
+        payloadStr = base64UrlDecode(payloadB64);
+      } catch {
+        return NextResponse.json({ active: false, reason: "bad-encoding" });
+      }
+
       const hmac = createHmac("sha256", key);
-      hmac.update(Buffer.from(payloadB64, "base64url").toString("utf8"));
+      hmac.update(payloadStr);
       const expectedSig = hmac.digest("hex");
 
       if (signature !== expectedSig) {
@@ -40,9 +55,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse payload
+    let payloadStr: string;
+    try {
+      payloadStr = base64UrlDecode(payloadB64);
+    } catch {
+      return NextResponse.json({ active: false, reason: "bad-encoding" });
+    }
+
     let payload: any;
     try {
-      payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+      payload = JSON.parse(payloadStr);
     } catch {
       return NextResponse.json({ active: false, reason: "bad-payload" });
     }
@@ -56,8 +78,8 @@ export async function POST(request: NextRequest) {
       active: true,
       expiresAt: expiresAt || null,
     });
-  } catch (error) {
-    console.error("Check-pro error:", error);
+  } catch (error: any) {
+    console.error("Check-pro error:", error?.message || error);
     return NextResponse.json({ active: false, reason: "server-error" });
   }
 }
