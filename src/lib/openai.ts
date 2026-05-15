@@ -72,12 +72,15 @@ export async function generateContent(
           },
         ],
         temperature: 0.7,
-        max_tokens: 384,
+        max_tokens: 2048, // was 384 — needed room for 3 platform outputs
       }),
       signal: controller.signal,
     });
 
     const json = await response.json();
+    if (!response.ok) {
+      throw new Error(json.error?.message || `API error ${response.status}`);
+    }
     let raw = json.choices?.[0]?.message?.content || "{}";
     raw = raw.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
     const result = JSON.parse(raw);
