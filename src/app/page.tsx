@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Loader2, Globe, FileText, Sparkles, Zap, Share2, Repeat, Check, ArrowRight, Mail } from "lucide-react";
 import ResultsPanel from "@/components/ResultsPanel";
 import PricingSection from "@/components/PricingSection";
-import { canGenerate, incrementUsage, remainingFree, isPro } from "@/lib/paywall";
+import { canGenerate, incrementUsage, remainingFree, isPro, verifyProOnServer } from "@/lib/paywall";
 
 export default function Home() {
   const [inputType, setInputType] = useState<"url" | "text">("text");
@@ -14,6 +14,18 @@ export default function Home() {
   const [results, setResults] = useState<any[] | null>(null);
   const [error, setError] = useState("");
   const [showPricing, setShowPricing] = useState(false);
+
+  // Verify Pro status with server on mount — catches forged localStorage
+  useEffect(() => {
+    if (isPro()) {
+      verifyProOnServer().then((valid) => {
+        if (!valid) {
+          // Forced a re-render; localStorage was already cleared by verifyProOnServer
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
 
@@ -42,7 +54,9 @@ export default function Home() {
   const btnDisabled = loading || (inputType === "url" ? !isValidUrl(url) : !hasMinChars);
 
   const handleGenerate = useCallback(async () => {
-    if (!canGenerate()) {
+    // Server-verify before allowing generation (not just localStorage check)
+    const serverValid = await verifyProOnServer();
+    if (!serverValid && !canGenerate()) {
       setShowPricing(true);
       document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
       return;
