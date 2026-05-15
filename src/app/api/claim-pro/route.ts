@@ -1,14 +1,21 @@
 // POST /api/claim-pro
-// Called by browser after LemonSqueezy checkout.success postMessage
 // Issues an HMAC-signed token proving the user paid
 
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
 function getSigningKey(): string {
-  // LLM_API_KEY is already set in Vercel env — long random string, works as HMAC key
+  // LLM_API_KEY is already set in Vercel env — works as HMAC key
   // Recommended: add separate LEMON_SQUEEZY_SECRET env var for production
   return process.env.LEMON_SQUEEZY_SECRET || process.env.LLM_API_KEY || "";
+}
+
+function base64UrlEncode(s: string): string {
+  return Buffer.from(s, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 export async function POST(request: NextRequest) {
@@ -36,7 +43,6 @@ export async function POST(request: NextRequest) {
     const expiresAt = now + 30 * 24 * 60 * 60 * 1000; // 30 days
     const nonce = randomBytes(8).toString("hex");
 
-    // Payload: what we're certifying
     const payload = JSON.stringify({
       orderId: orderId || `anon_${nonce}`,
       email: customerEmail || "anonymous",
@@ -51,12 +57,12 @@ export async function POST(request: NextRequest) {
     hmac.update(payload);
     const signature = hmac.digest("hex");
 
-    // Token = base64(payload) + "." + signature
-    const token = Buffer.from(payload, "utf8").toString("base64url") + "." + signature;
+    // Token = base64url(payload) + "." + signature
+    const token = base64UrlEncode(payload) + "." + signature;
 
     return NextResponse.json({ token, expiresAt });
-  } catch (error) {
-    console.error("Claim error:", error);
+  } catch (error: any) {
+    console.error("Claim error:", error?.message || error);
     return NextResponse.json(
       { error: "Failed to process claim." },
       { status: 500 }
