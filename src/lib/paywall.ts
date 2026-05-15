@@ -75,7 +75,7 @@ export async function claimPro(checkoutData?: any): Promise<boolean> {
 /** Verify pro status with the server using the stored token */
 export async function verifyProOnServer(): Promise<boolean> {
   const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return false;
+  if (!token) return getProData().active;
 
   try {
     const res = await fetch('/api/check-pro', {
