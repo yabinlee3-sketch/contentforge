@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* force-full-rebuild-2026-05-15 */
 };
 
 export default nextConfig;
