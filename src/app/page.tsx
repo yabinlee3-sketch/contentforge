@@ -25,7 +25,6 @@ export default function Home() {
       });
     }
   }, []);
-  }, []);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
 
