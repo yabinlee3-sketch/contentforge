@@ -5,14 +5,12 @@ function getKey(): string {
 }
 
 function b64url(s: string): string {
-  return Buffer.from(s, "utf8")
-    .toString("base64")
+  return btoa(unescape(encodeURIComponent(s)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 }
 
-export const runtime = "edge";
 
 export async function POST(request: Request) {
   try {
