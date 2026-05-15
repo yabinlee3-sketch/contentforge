@@ -1,4 +1,4 @@
-// POST /api/claim-pro — Edge Runtime compatible (Web Crypto API)
+// touchendpoint-2026-05-15-13-50
 
 function getKey(): string {
   return process.env.LEMON_SQUEEZY_SECRET || process.env.LLM_API_KEY || "";
