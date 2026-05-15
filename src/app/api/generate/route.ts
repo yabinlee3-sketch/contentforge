@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUrlContent, generateContent } from "@/lib/openai";
 
-export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
