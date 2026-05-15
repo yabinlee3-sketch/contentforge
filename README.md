@@ -5,6 +5,8 @@
 Turn a blog post or article into platform-native posts for Twitter/X, LinkedIn, and Newsletter — in seconds.
 
 ---
+<!-- deploy-trigger: 2026-05-15 -->
+
 
 ## Quick Start
 
