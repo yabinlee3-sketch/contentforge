@@ -15,16 +15,16 @@ export default function Home() {
   const [error, setError] = useState("");
   const [showPricing, setShowPricing] = useState(false);
 
-  // Verify Pro status with server on mount — catches forged localStorage
+  // Verify Pro status with server on mount
   useEffect(() => {
     if (isPro()) {
       verifyProOnServer().then((valid) => {
         if (!valid) {
-          // Forced a re-render; localStorage was already cleared by verifyProOnServer
-          window.location.reload();
+          setShowPricing(true);
         }
       });
     }
+  }, []);
   }, []);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
