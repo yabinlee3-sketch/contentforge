@@ -7,10 +7,9 @@ function getKey(): string {
 function b64url(s: string): string {
   let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
   while (b64.length % 4) b64 += "=";
-  return Buffer.from(b64, "base64").toString("utf8");
+  return decodeURIComponent(escape(atob(b64)));
 }
 
-export const runtime = "edge";
 
 export async function POST(request: Request) {
   try {
