@@ -15,16 +15,13 @@ export default function Home() {
   const [error, setError] = useState("");
   const [showPricing, setShowPricing] = useState(false);
 
-  // Verify Pro status with server on mount
+  // Verify Pro status with server on mount — silently drop forged localStorage
   useEffect(() => {
     if (isPro()) {
       verifyProOnServer().then((valid) => {
-        if (!valid) {
-          setShowPricing(true);
-        }
+        if (!valid) setShowPricing(true);  // Show pricing if server says not Pro (no reload loop)
       });
     }
-  }, []);
   }, []);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);

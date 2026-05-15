@@ -1,53 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateContent, fetchUrlContent } from "@/lib/openai";
+import { fetchUrlContent, generateContent } from "@/lib/openai";
+
+export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { type, url, text } = body;
 
-    if (!type) {
-      return NextResponse.json({ error: "Missing type" }, { status: 400 });
-    }
-
-    let content: string;
-    let title: string;
+    let sourceText: string;
+    let sourceTitle: string;
 
     if (type === "url" && url) {
       try {
         const fetched = await fetchUrlContent(url);
-        content = fetched.content;
-        title = fetched.title;
-      } catch {
+        sourceText = fetched.content;
+        sourceTitle = fetched.title;
+      } catch (e: any) {
         return NextResponse.json(
-          { error: "Failed to fetch URL. Try pasting text instead." },
+          { error: e.message || "Failed to fetch URL. Try pasting text instead." },
           { status: 400 }
         );
       }
-    } else if (type === "text" && text) {
-      content = text;
-      title = text.slice(0, 60) + (text.length > 60 ? "..." : "");
+    } else if (type === "text" && text && text.trim().length >= 50) {
+      sourceText = text;
+      sourceTitle = text.slice(0, 60) + (text.length > 60 ? "..." : "");
     } else {
-      return NextResponse.json({ error: "Missing content" }, { status: 400 });
-    }
-
-    const trimmedContent = content.trim();
-    if (trimmedContent.length < 50) {
       return NextResponse.json(
-        { error: "Content too short. Please provide at least 50 non-whitespace characters." },
+        { error: "Invalid request. Use type='url' with a valid URL or type='text' with at least 50 characters." },
         { status: 400 }
       );
     }
 
-    // Use trimmed content for generation
-    content = trimmedContent;
-
-    const result = await generateContent(content, title);
+    // Call AI generation on the server — API key stays safe
+    const result = await generateContent(sourceText, sourceTitle);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
-      { error: "Generation failed. Please try again." },
+      { error: "Failed to process request. Please try pasting text directly." },
       { status: 500 }
     );
   }
