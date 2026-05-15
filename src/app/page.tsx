@@ -6,35 +6,6 @@ import ResultsPanel from "@/components/ResultsPanel";
 import PricingSection from "@/components/PricingSection";
 import { canGenerate, incrementUsage, remainingFree, isPro } from "@/lib/paywall";
 
-// DeepSeek client-side call — bypasses Vercel's 10s+ timeout
-const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
-const DEEPSEEK_KEY = "sk-d67a1b0a57734dcc81c98cec839aea47";
-const SYSTEM_PROMPT = `You are ContentForge. Take an article and write 3 platform versions: Twitter/X thread, LinkedIn post, newsletter.
-
-Output JSON: {"platforms":[{"platform":"twitter|linkedin|newsletter","content":"...","tips":"tip"}]}`;
-
-async function callDeepSeek(text: string, title: string) {
-  const res = await fetch(DEEPSEEK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEEPSEEK_KEY}` },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Title: ${title}\n\nContent:\n${text.slice(0, 4000)}` },
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-    }),
-    signal: AbortSignal.timeout(30000),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error?.message || `API error ${res.status}`);
-  let raw = json.choices?.[0]?.message?.content || "{}";
-  raw = raw.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
-  return JSON.parse(raw);
-}
-
 export default function Home() {
   const [inputType, setInputType] = useState<"url" | "text">("text");
   const [url, setUrl] = useState("");
@@ -50,15 +21,25 @@ export default function Home() {
   const hasMinChars = trimmedLen >= 50;
   const needsMore = 50 - trimmedLen;
 
+  const isValidUrl = (s: string) => {
+    try {
+      const u = new URL(s);
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
   const btnLabel = useMemo(() => {
     if (loading) return "Generating...";
-    if (inputType === "url") return "Generate Content";
+    if (inputType === "url") return url ? "Generate Content" : "Enter a URL to start";
     if (!text.trim()) return "Paste your content to start";
     if (!hasMinChars) return `Need ${needsMore} more characters`;
     return "Generate Content";
   }, [loading, inputType, text, hasMinChars, needsMore]);
 
-  const btnDisabled = loading || (inputType === "url" ? !url : !hasMinChars);
+  // URL: valid URL required; Text: 50+ chars required
+  const btnDisabled = loading || (inputType === "url" ? !isValidUrl(url) : !hasMinChars);
 
   const handleGenerate = useCallback(async () => {
     if (!canGenerate()) {
@@ -70,28 +51,27 @@ export default function Home() {
     setResults(null);
     setLoading(true);
     try {
-      let sourceText: string;
-      let sourceTitle: string;
-      if (inputType === "url") {
-        const fetchRes = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "url", url }),
-          signal: AbortSignal.timeout(15000),
-        });
-        const fetchData = await fetchRes.json();
-        if (!fetchRes.ok) throw new Error(fetchData.error || "Failed to fetch URL");
-        sourceText = fetchData.content;
-        sourceTitle = fetchData.title || "Untitled";
-      } else {
-        sourceText = text;
-        sourceTitle = text.slice(0, 60) + (text.length > 60 ? "..." : "");
-      }
-      const result = await callDeepSeek(sourceText, sourceTitle);
-      setResults(result.platforms || []);
+      // All AI processing happens server-side — no API keys in browser!
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: inputType,
+          url: inputType === "url" ? url : undefined,
+          text: inputType === "text" ? text : undefined,
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      setResults(data.platforms || []);
       incrementUsage();
     } catch (e: any) {
-      setError(e.message);
+      if (e.name === "TimeoutError" || e.name === "AbortError") {
+        setError("Request timed out. For long articles, try pasting text directly (it's faster than fetching a URL).");
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -101,7 +81,6 @@ export default function Home() {
     e.preventDefault();
     if (email.includes("@")) {
       setEmailSent(true);
-      // You can connect this to a real email service later
     }
   };
 
@@ -186,6 +165,10 @@ export default function Home() {
                 {trimmedLen}<span className="text-zinc-600"> / 50 min</span>
               </span>
             </div>
+          )}
+
+          {inputType === "url" && url && !isValidUrl(url) && (
+            <p className="mt-1 text-xs text-amber-400">Please enter a valid URL (https://...)</p>
           )}
 
           <button onClick={handleGenerate} disabled={btnDisabled}
